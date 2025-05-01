@@ -2,12 +2,33 @@
 Software for rooting a (dutch/belgian) Toon/Boxx using software and a wifi hotspot only.
 
 ## What do I need?
-First you need to setup a Linux/Pi machine as a routed wifi hotspot, see for example https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point
-You goal must be that you can connect your Toon to the routed wifi hotspot and have internet on the Toon. The reason for this is that the script will need to intercept Toon internet traffic.
+First you need to setup a Linux/Pi machine as a routed wifi hotspot, see for example https://www.raspberrypi.com/documentation/computers/configuration.html#host-a-wireless-network-from-your-raspberry-pi
+Your goal must be that you can connect your Toon to the routed wifi hotspot and have internet on the Toon. The reason for this is that the script will need to intercept Toon internet traffic.
 
-The script is tested on Raspbian Buster so you better have that installed or be prepared to modify the script a bit.
+This is what I essentially did to create a working WiFi hotspot on my Raspberry PI 4B:
+```
+sudo nmcli con add con-name rasprouter ifname wlan0 type wifi ssid "ToonRouter"
+sudo nmcli con modify rasprouter wifi-sec.key-mgmt wpa-psk
+sudo nmcli con modify rasprouter wifi-sec.psk "raspberry"   # CHANGEME: use something better, especially if you are keeping the hotspot alive after this hack
+sudo nmcli con modify rasprouter 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+```
+Then connect your Toon to this WiFi hotspot.
 
-Next, make sure tcpdump is installed: ```sudo apt install tcpdump```
+The script is tested on Raspbian Bookworm so you better have that installed or be prepared to modify the script a bit.
+
+Next, make sure these modules are installed: 
+```
+sudo apt install tcpdump netcat-openbsd iptables
+```
+
+I have got this:
+```
+iptables/stable,now 1.8.9-2 arm64 [installed]
+netcat-openbsd/stable,now 1.219-1 arm64 [installed]
+tcpdump/stable,now 4.99.3-1 arm64 [installed]
+```
+
+The changes that I made had to do with differences in how tcpdump logged its results in a newer version.
 
 ## Rooting test run
 
@@ -25,8 +46,8 @@ The script intercepts Toon traffic as it is trying to create a VPN connection to
 
 The next step for the script is to open a listen port (by using netcat) on port 31080 (the service center port) on the just learned service center IP address. The effect is that the Toon will simulate to be the servicecenter. Next, the user is requested to press the 'software' button on the Toon which in turn will cause the Toon to request the servicecenter if there is a software update available. This request is received by the script and a answer is given to the Toon with a hidden 'curl 1.1|sh' command within the 'new' version number. A bug in the Toon software which should download the version of the new software will run this hidden command. This will initiate a shell command on the Toon to download the payload from the machine running the script. Once the payload is downloaded by the Toon, this payload script will do the rest.
 
-## It is not working on my 5.xx.100 and 6.x.x firmware toon
-These devices are linked to a new service center in the AWS IOT cloud. The 5.xx.100 was a test group which contained about 10% toon2's and 30% toon1's. And from 6.x.x all Toons are receiving the AWS IOT connection. Rooting these devices with this firmware installed is not always working correctly as it requires the IOT token to be timed out first. Best is to fall back to toon1 old-fashioned rooting with the ToonRooter script and for the toon2 first perform a recovery of the firmware to the factory default firmware which from there you can use this tool.
+## It is not working on my Toon
+Newer devices may be linked to a new service center in the AWS IOT cloud. The 5.xx.100 was a test group which contained about 10% toon2's and 30% toon1's. And from 6.x.x all Toons are receiving the AWS IOT connection. Rooting these devices with this firmware installed is not always working correctly as it requires the IOT token to be timed out first. Best is to fall back to toon1 old-fashioned rooting with the ToonRooter script and for the toon2 first perform a recovery of the firmware to the factory default firmware which from there you can use this tool.
 
 ### Toon 2 recovery procedure
 You have to press the reset button at the bottom of the screen. Keep it pressed while you reboot the toon. After a few seconds you will enter the recovery mode. Press anywhere on the screen to start the recovery flashing while still keeping the reset button pressed. When the recovery flashing has been completed (it is quite fast) you will see a message that the Toon will reboot in 3 seconds. You can then release the reset button and you will be on version 4.9.
